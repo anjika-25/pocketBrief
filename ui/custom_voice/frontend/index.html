@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-card: #ffffff;
+            --border: rgba(0, 0, 0, 0.06);
+            --border-focus: rgba(124, 114, 187, 0.25);
+            --accent: #7c72bb;
+            --accent-2: #a49cd9;
+            --text: #2a2a38;
+            --placeholder: #a0a0b8;
+            --btn-hover: rgba(124, 114, 187, 0.08);
+            --send-bg: linear-gradient(135deg, #8a7eca, #7c72bb);
+            --red: #dc2626;
+            --green: #16a34a;
+            --conv-gradient: linear-gradient(135deg, #6d5ad1, #8a7eca);
+            --conv-active: linear-gradient(135deg, #dc2626, #ef4444);
+            --conv-listening: linear-gradient(135deg, #16a34a, #22c55e);
+            --conv-processing: linear-gradient(135deg, #f59e0b, #fbbf24);
+            --conv-speaking: linear-gradient(135deg, #3b82f6, #60a5fa);
+            --process-gradient: linear-gradient(135deg, #16a34a, #22c55e);
+        }
+
+        body {
+            margin: 0;
+            padding: 6px 0 4px;
+            font-family: 'Inter', sans-serif;
+            background: transparent;
+        }
+
+        .wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 7px 10px 7px 12px;
+            box-shadow: 0 4px 20px rgba(30, 27, 53, 0.06);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .wrap:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: 0 4px 20px rgba(30, 27, 53, 0.06), 0 0 0 3px rgba(109, 90, 209, 0.06);
+        }
+
+        .wrap.conv-active {
+            border-color: rgba(109, 90, 209, 0.4);
+            box-shadow: 0 4px 20px rgba(109, 90, 209, 0.12), 0 0 0 3px rgba(109, 90, 209, 0.08);
+        }
+
+        .wrap.url-detected {
+            border-color: rgba(22, 163, 74, 0.3);
+            box-shadow: 0 4px 20px rgba(22, 163, 74, 0.08), 0 0 0 3px rgba(22, 163, 74, 0.06);
+        }
+
+        #chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 8px 4px;
+            caret-color: var(--accent);
+            min-width: 0;
+            resize: none;
+            height: 24px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        #chat-input::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #chat-input::-webkit-scrollbar-thumb {
+            background: rgba(124, 114, 187, 0.15);
+            border-radius: 4px;
+        }
+
+        #chat-input::placeholder {
+            color: var(--placeholder);
+        }
+
+        .icon-btn {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            background: none;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8e88a8;
+            transition: all 0.14s;
+        }
+
+        .icon-btn:hover {
+            background: var(--btn-hover);
+            color: var(--accent);
+        }
+
+        .icon-btn svg {
+            display: block;
+        }
+
+        /* ─── Conversation Mode Button ─── */
+        #conv-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--conv-gradient);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 10px rgba(109, 90, 209, 0.25);
+            flex-shrink: 0;
+        }
+
+        #conv-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 4px 16px rgba(109, 90, 209, 0.35);
+        }
+
+        /* Ripple ring for conversation mode */
+        #conv-btn::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        #conv-btn.listening {
+            background: var(--conv-listening);
+            box-shadow: 0 0 20px rgba(22, 163, 74, 0.35);
+        }
+
+        #conv-btn.listening::before {
+            border-color: rgba(22, 163, 74, 0.3);
+        }
+
+        #conv-btn.processing {
+            background: var(--conv-processing);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+            animation: convSpin 1.5s linear infinite;
+        }
+
+        #conv-btn.speaking {
+            background: var(--conv-speaking);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.35);
+        }
+
+        #conv-btn.stopping {
+            background: var(--conv-active);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
+        }
+
+
+        /* ─── Status Label ─── */
+        .conv-status {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--placeholder);
+            display: none;
+            align-items: center;
+            gap: 5px;
+            margin-right: 4px;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .conv-status.visible {
+            display: flex;
+        }
+
+        .conv-status .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .conv-status.listening .status-dot {
+            background: var(--green);
+            box-shadow: 0 0 5px var(--green);
+        }
+
+        .conv-status.listening {
+            color: var(--green);
+        }
+
+        .conv-status.processing .status-dot {
+            background: #f59e0b;
+            box-shadow: 0 0 5px #f59e0b;
+            animation: blink 1s step-start infinite;
+        }
+
+        .conv-status.processing {
+            color: #f59e0b;
+        }
+
+        .conv-status.speaking .status-dot {
+            background: #3b82f6;
+            box-shadow: 0 0 5px #3b82f6;
+            animation: blink 0.7s step-start infinite;
+        }
+
+        .conv-status.speaking {
+            color: #3b82f6;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0
+            }
+        }
+
+        /* ─── Process Chip (appears when YouTube URL is detected) ─── */
+        #process-chip {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: var(--process-gradient);
+            color: #fff;
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 10px rgba(22, 163, 74, 0.25);
+            animation: chipIn 0.2s ease;
+        }
+
+        #process-chip:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+        }
+
+        #process-chip.visible {
+            display: flex;
+        }
+
+        #process-chip.loading {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+            pointer-events: none;
+        }
+
+        @keyframes chipIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* ─── Send Button ─── */
+        #send-btn {
+            background: var(--send-bg);
+            color: #fff;
+            border-radius: 9px;
+            box-shadow: 0 2px 10px rgba(124, 114, 187, 0.18);
+            transition: all 0.14s;
+        }
+
+        #send-btn:hover {
+            box-shadow: 0 4px 16px rgba(124, 114, 187, 0.25);
+            transform: translateY(-1px);
+            opacity: 0.91;
+        }
+
+        #send-btn:active {
+            transform: translateY(0);
+        }
+
+
+
+        /* ─── URL detected indicator ─── */
+        .url-indicator {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--green);
+            white-space: nowrap;
+            flex-shrink: 0;
+            letter-spacing: 0.03em;
+        }
+
+        .url-indicator.visible {
+            display: flex;
+        }
+
+        .url-indicator svg {
+            display: block;
+        }
+
+        /* Hide send & text input in active conv mode */
+        .wrap.conv-active #send-btn,
+        .wrap.conv-active #process-chip,
+        .wrap.conv-active .url-indicator {
+            display: none !important;
+        }
+
+        .wrap.conv-active input[type="text"] {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* ─── Separator line between sections ─── */
+        .btn-separator {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+            flex-shrink: 0;
+            margin: 0 2px;
+        }
+
+        /* ─── Upload Button ─── */
+        #upload-btn {
+            color: #8e88a8;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+        }
+
+        #upload-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        #upload-btn:hover {
+            color: var(--accent);
+            background: var(--btn-hover);
+            transform: scale(1.1);
+        }
+
+        #upload-btn:active {
+            transform: scale(0.95);
+        }
+
+        #upload-btn.processing {
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap" id="wrap">
+        <!-- New Upload Button (+) -->
+        <button id="upload-btn" class="icon-btn" title="Upload Document or Photo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+        </button>
+        <input type="file" id="file-uploader" style="display:none"
+            accept="image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" />
+
+        <!-- Conversation Mode Button (blue mic) -->
+        <button id="conv-btn" title="Voice conversation">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+        </button>
+
+        <!-- Status indicator for conversation mode -->
+        <span class="conv-status" id="conv-status">
+            <span class="status-dot"></span>
+            <span class="status-text">Listening…</span>
+        </span>
+
+        <!-- Thin separator -->
+        <div class="btn-separator" id="sep-1"></div>
+
+        <!-- Unified multiline input -->
+        <textarea id="chat-input" placeholder="Ask anything, paste a YouTube link, or use 🎤 voice…" autocomplete="off"
+            rows="1"></textarea>
+
+        <!-- URL detected indicator -->
+        <span class="url-indicator" id="url-indicator">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+            </svg>
+            <span>VIDEO</span>
+        </span>
+
+        <!-- Process Video chip button (shows when URL detected) -->
+        <button id="process-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            <span id="process-label">Process</span>
+        </button>
+
+        <!-- Send button -->
+        <button id="send-btn" class="icon-btn" title="Send">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        /* ━━━━━━━━━━━ Streamlit Component Bridge ━━━━━━━━━━━ */
+        const Streamlit = {
+            sendMessageToParent(type, data) {
+                window.parent.postMessage({ isStreamlitMessage: true, type, ...data }, "*");
+            },
+            setComponentReady() { this.sendMessageToParent("streamlit:componentReady", { apiVersion: 1 }); },
+            setFrameHeight(h) { this.sendMessageToParent("streamlit:setFrameHeight", { height: h }); },
+            setComponentValue(v) { this.sendMessageToParent("streamlit:setComponentValue", { value: v }); },
+            events: {
+                addEventListener(type, cb) {
+                    window.addEventListener("message", e => {
+                        if (e.data && e.data.type === "streamlit:" + type) cb(e);
+                    });
+                }
+            },
+            RENDER_EVENT: "render"
+        };
+
+        /* ━━━━━━━━━━━ DOM Elements ━━━━━━━━━━━ */
+        const wrap = document.getElementById('wrap');
+        const convBtn = document.getElementById('conv-btn');
+        const convStatus = document.getElementById('conv-status');
+        const statusText = convStatus.querySelector('.status-text');
+        const sendBtn = document.getElementById('send-btn');
+        const input = document.getElementById('chat-input');
+        const processChip = document.getElementById('process-chip');
+        const processLabel = document.getElementById('process-label');
+        const urlIndicator = document.getElementById('url-indicator');
+        const sep1 = document.getElementById('sep-1');
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileUploader = document.getElementById('file-uploader');
+
+        /* ━━━━━━━━━━━ YouTube URL Detection ━━━━━━━━━━━ */
+        const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)[\w-]+/i;
+
+        function isYouTubeURL(str) {
+            const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+            return pattern.test(str.trim());
+        }
+
+        function checkForURL() {
+            const hasURL = isYouTubeURL(input.value);
+            processChip.classList.toggle('visible', hasURL);
+            urlIndicator.classList.toggle('visible', hasURL);
+            wrap.classList.toggle('url-detected', hasURL);
+        }
+
+        function autoResize() {
+            input.style.height = '24px';
+            const newHeight = Math.max(24, Math.min(input.scrollHeight, 120));
+            input.style.height = newHeight + 'px';
+            Streamlit.setFrameHeight(newHeight + 42);
+            checkForURL();
+        }
+
+        input.addEventListener('input', autoResize);
+        input.addEventListener('paste', () => setTimeout(autoResize, 50));
+
+        /* ━━━━━━━━━━━ State ━━━━━━━━━━━ */
+        let convMode = false;           // conversation mode active
+        let convState = 'idle';         // idle | listening | processing | speaking
+        let recognition = null;
+        let finalStr = '';
+        let silenceTimer = null;
+        let currentAudio = null;        // currently playing TTS audio
+        const SILENCE_TIMEOUT = 1800;   // ms of silence before auto-sending
+
+        /* ━━━━━━━━━━━ Speech Recognition Setup ━━━━━━━━━━━ */
+        const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechAPI) {
+            recognition = new SpeechAPI();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                if (convMode) {
+                    setConvState('listening');
+                }
+            };
+
+            recognition.onresult = (e) => {
+                let interim = '', finals = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    if (e.results[i].isFinal) finals += e.results[i][0].transcript;
+                    else interim += e.results[i][0].transcript;
+                }
+                if (finals) finalStr += finals + ' ';
+                input.value = finalStr + interim;
+
+                // In conversation mode, reset silence timer on every result
+                if (convMode) {
+                    clearTimeout(silenceTimer);
+                    if (input.value.trim()) {
+                        silenceTimer = setTimeout(() => {
+                            if (convMode && convState === 'listening' && input.value.trim()) {
+                                convAutoSend();
+                            }
+                        }, SILENCE_TIMEOUT);
+                    }
+                }
+            };
+
+            recognition.onerror = (e) => {
+                console.warn('Speech recognition error:', e.error);
+                if (convMode) {
+                    if (e.error === 'no-speech' || e.error === 'aborted') {
+                        setTimeout(() => {
+                            if (convMode && convState !== 'processing' && convState !== 'speaking') {
+                                startConvListening();
+                            }
+                        }, 300);
+                    }
+                }
+            };
+
+            recognition.onend = () => {
+                if (convMode) {
+                    if (convState === 'listening') {
+                        if (input.value.trim()) {
+                            convAutoSend();
+                        } else {
+                            setTimeout(() => {
+                                if (convMode && convState === 'listening') {
+                                    startConvListening();
+                                }
+                            }, 200);
+                        }
+                    }
+                }
+            };
+        } else {
+            convBtn.style.display = 'none';
+        }
+
+        /* ━━━━━━━━━━━ Conversation Mode Logic ━━━━━━━━━━━ */
+
+        function setConvState(state) {
+            convState = state;
+            convBtn.className = '';
+            convStatus.className = 'conv-status';
+
+            if (state === 'idle') {
+                convStatus.classList.remove('visible');
+                wrap.classList.remove('conv-active');
+                sep1.style.display = '';
+                return;
+            }
+
+            wrap.classList.add('conv-active');
+            convStatus.classList.add('visible');
+            sep1.style.display = 'none';
+
+            switch (state) {
+                case 'listening':
+                    convBtn.classList.add('listening');
+                    convStatus.classList.add('listening');
+                    statusText.textContent = 'Listening…';
+                    input.placeholder = 'Speak now…';
+                    break;
+                case 'processing':
+                    convBtn.classList.add('processing');
+                    convStatus.classList.add('processing');
+                    statusText.textContent = 'Thinking…';
+                    input.placeholder = 'Processing…';
+                    break;
+                case 'speaking':
+                    convBtn.classList.add('speaking');
+                    convStatus.classList.add('speaking');
+                    statusText.textContent = 'Speaking…';
+                    break;
+            }
+        }
+
+        function startConvMode() {
+            convMode = true;
+            finalStr = '';
+            input.value = '';
+            startConvListening();
+        }
+
+        function stopConvModeLocal() {
+            convMode = false;
+            clearTimeout(silenceTimer);
+
+            if (recognition) {
+                try { recognition.stop(); } catch (_) { }
+            }
+
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+
+            setConvState('idle');
+            input.value = '';
+            input.placeholder = 'Ask anything, paste a YouTube link, or use 🎤 voice…';
+        }
+
+        function stopConvMode() {
+            stopConvModeLocal();
+            Streamlit.setComponentValue({ text: '', ts: Date.now(), convMode: false, action: 'stop_conv' });
+        }
+
+        function startConvListening() {
+            if (!recognition || !convMode) return;
+            finalStr = '';
+            input.value = '';
+            setConvState('listening');
+            try {
+                recognition.start();
+            } catch (e) {
+                console.warn('Recognition start failed:', e);
+            }
+        }
+
+        function convAutoSend() {
+            clearTimeout(silenceTimer);
+            const text = input.value.trim();
+            if (!text) {
+                if (convMode) startConvListening();
+                return;
+            }
+
+            try { recognition.stop(); } catch (_) { }
+
+            setConvState('processing');
+
+            Streamlit.setComponentValue({
+                text: text,
+                ts: Date.now(),
+                convMode: true
+            });
+
+            finalStr = '';
+        }
+
+        convBtn.addEventListener('click', () => {
+            if (convMode) {
+                stopConvMode();
+            } else {
+                startConvMode();
+            }
+        });
+
+        /* ━━━━━━━━━━━ Handle Audio Response from Streamlit ━━━━━━━━━━━ */
+
+        let lastPlayedAudioId = '';
+
+        Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, (event) => {
+            Streamlit.setFrameHeight(66);
+
+            const args = event.data.args;
+            if (!args) return;
+
+            // Handle processing state for upload button
+            if (args.pending_upload) {
+                uploadBtn.classList.add('processing');
+                uploadBtn.title = 'Uploading and reading document...';
+            } else {
+                uploadBtn.classList.remove('processing');
+                uploadBtn.title = 'Upload Document or Photo';
+            }
+
+            // Handle processing state for video process chip
+            if (args.video_processing) {
+                processLabel.textContent = 'Processing…';
+                processChip.classList.add('loading');
+            } else {
+                processLabel.textContent = 'Process';
+                processChip.classList.remove('loading');
+            }
+
+            // Handle input clearing from Streamlit
+            if (args.clear_input) {
+                input.value = '';
+                finalStr = '';
+                checkForURL();
+            }
+
+            // Restore conversation mode after Streamlit rerun
+            if (args.conv_mode_active && !convMode) {
+                convMode = true;
+            }
+
+            // Handle audio or resume in conversation mode
+            if (convMode) {
+                const hasNewAudio = args.audio_b64 && args.audio_b64.length > 0
+                    && args.audio_id && args.audio_id !== lastPlayedAudioId;
+
+                if (hasNewAudio) {
+                    lastPlayedAudioId = args.audio_id;
+                    playAudioResponse(args.audio_b64);
+                } else if (args.resume_listening && !hasNewAudio) {
+                    startConvListening();
+                } else if (!args.audio_b64 && !args.resume_listening && convState !== 'listening' && convState !== 'speaking') {
+                    setConvState('processing');
+                }
+            }
+        });
+
+        /* ━━━━━━━━━━━ Upload Logic ━━━━━━━━━━━ */
+
+        uploadBtn.addEventListener('click', () => {
+            console.log("Upload button (+) clicked");
+            fileUploader.click();
+        });
+
+        fileUploader.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                console.log("No file selected");
+                return;
+            }
+
+            console.log("File selected: " + file.name + " (" + file.size + " bytes)");
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64Data = event.target.result.split(',')[1];
+                console.log("File read successfully, sending to Streamlit...");
+                Streamlit.setComponentValue({
+                    action: 'upload_file',
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileData: base64Data,
+                    ts: Date.now()
+                });
+                // Reset for next time
+                fileUploader.value = '';
+            };
+            reader.onerror = (err) => {
+                console.error("FileReader error: ", err);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function playAudioResponse(base64Audio) {
+            setConvState('speaking');
+
+            currentAudio = new Audio('data:audio/mpeg;base64,' + base64Audio);
+            currentAudio.volume = 1.0;
+
+            currentAudio.onended = () => {
+                currentAudio = null;
+                if (convMode) {
+                    setTimeout(() => startConvListening(), 400);
+                }
+            };
+
+            currentAudio.onerror = (e) => {
+                console.error('Audio playback error:', e);
+                currentAudio = null;
+                if (convMode) {
+                    setTimeout(() => startConvListening(), 400);
+                }
+            };
+
+            currentAudio.play().catch(e => {
+                console.error('Play failed:', e);
+                if (convMode) {
+                    setTimeout(() => startConvListening(), 400);
+                }
+            });
+        }
+
+        /* ━━━━━━━━━━━ Process Video ━━━━━━━━━━━ */
+
+        processChip.addEventListener('click', () => {
+            const url = input.value.trim();
+            if (!isYouTubeURL(url)) return;
+
+            // Send a special "process_video" action
+            Streamlit.setComponentValue({
+                text: url,
+                ts: Date.now(),
+                convMode: false,
+                action: 'process_video'
+            });
+
+            // Immediately clear UI
+            input.value = '';
+            finalStr = '';
+            checkForURL();
+
+            // Visual feedback
+            processLabel.textContent = 'Processing…';
+            processChip.classList.add('loading');
+        });
+
+        /* ━━━━━━━━━━━ Text Send ━━━━━━━━━━━ */
+
+        function send() {
+            if (convMode) return;
+            const text = input.value.trim();
+            input.value = '';
+            finalStr = '';
+            autoResize();
+
+            // Reset URL detection
+            processLabel.textContent = 'Process';
+            processChip.classList.remove('loading');
+
+            if (text) Streamlit.setComponentValue({ text, ts: Date.now(), convMode: false });
+        }
+
+        sendBtn.addEventListener('click', send);
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey && !convMode) {
+                e.preventDefault();
+                // If it's a YouTube URL, process it; otherwise send as chat
+                if (isYouTubeURL(input.value)) {
+                    processChip.click();
+                } else {
+                    send();
+                }
+            }
+        });
+
+        /* ━━━━━━━━━━━ Init ━━━━━━━━━━━ */
+        Streamlit.setComponentReady();
+        autoResize();
+    </script>
+</body>
+
+</html>
