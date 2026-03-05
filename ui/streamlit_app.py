@@ -22,9 +22,22 @@ import streamlit as st
 
 API_BASE = "http://localhost:8000"
 
+# ─── Load logo image as base64 for inline embedding ──────────────────────────
+_LOGO_PATH = Path(__file__).resolve().parent / "assets" / "Pocket_Brief_2.png"
+if _LOGO_PATH.exists():
+    _LOGO_B64 = base64.b64encode(_LOGO_PATH.read_bytes()).decode()
+else:
+    _LOGO_B64 = ""
+
+_CHAT_LOGO_PATH = Path(__file__).resolve().parent / "assets" / "chat_logo.png"
+if _CHAT_LOGO_PATH.exists():
+    _CHAT_LOGO_B64 = base64.b64encode(_CHAT_LOGO_PATH.read_bytes()).decode()
+else:
+    _CHAT_LOGO_B64 = ""
+
 st.set_page_config(
     page_title="PocketBrief",
-    page_icon="✦",
+    page_icon=str(_LOGO_PATH) if _LOGO_PATH.exists() else "✦",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -312,13 +325,10 @@ st.markdown(f"""
         align-items: center;
     }}
     .logo-icon {{
-        width: 32px; height: 32px;
-        background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        width: 36px; height: 36px;
         border-radius: 9px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 15px; color: #fff;
-        box-shadow: 0 2px 10px rgba(124,114,187,0.18);
         flex-shrink: 0;
+        object-fit: contain;
     }}
     .logo-text {{
         font-weight: 700;
@@ -431,7 +441,7 @@ st.markdown(f"""
     }}
     
     /* Edit button styling — always visible, subtle, highlights on hover */
-    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div:nth-child(2) button {{
+    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has(> div:nth-child(3)) > div:nth-child(2) button {{
         background: transparent !important;
         color: var(--text-muted) !important;
         width: 28px !important;
@@ -450,9 +460,39 @@ st.markdown(f"""
         transform: scaleX(-1) !important;
     }}
 
-    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div:nth-child(2) button:hover {{
+    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has(> div:nth-child(3)) > div:nth-child(2) button:hover {{
         background: rgba(124, 114, 187, 0.12) !important;
         color: var(--accent-1) !important;
+    }}
+
+    /* Delete button styling — similar to edit but red on hover */
+    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has(> div:nth-child(3)) > div:nth-child(3) button {{
+        background: transparent !important;
+        color: var(--text-muted) !important;
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        max-width: 28px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 6px !important;
+        margin: 0 !important;
+        border: none !important;
+        transition: background 0.15s ease, color 0.15s ease !important;
+        flex-shrink: 0 !important;
+    }}
+
+    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has(> div:nth-child(3)) > div:nth-child(3) button:hover {{
+        background: rgba(220, 38, 38, 0.12) !important;
+        color: #dc2626 !important;
+    }}
+
+    /* Tooltip text color fix */
+    div[data-baseweb="tooltip"] *,
+    div[role="tooltip"] * {{
+        color: #f8f8f8 !important;
     }}
 
     /* Active chat button text */
@@ -503,13 +543,10 @@ st.markdown(f"""
         margin-top: -0.5rem; /* Move Up */
     }}
     .hdr-icon {{
-        width: 36px; height: 36px;
-        background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        width: 40px; height: 40px;
         border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 17px; color: #fff;
-        box-shadow: 0 3px 14px rgba(124,114,187,0.18);
         flex-shrink: 0;
+        object-fit: contain;
     }}
     .hdr-title {{ margin:0; font-size:1.25rem; font-weight:700; letter-spacing:-0.03em; color:var(--text-primary); }}
     .hdr-sub   {{ margin:3px 0 0; font-size:0.82rem; color:var(--text-secondary); display:flex; align-items:center; gap:6px; }}
@@ -619,10 +656,14 @@ st.markdown(f"""
 
     .ai-avatar {{
         width:30px; height:30px; border-radius:9px;
-        background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        background: transparent;
         display:flex; align-items:center; justify-content:center;
-        font-size:13px; flex-shrink:0; margin-top:2px; color:#fff;
+        flex-shrink:0; margin-top:2px;
         box-shadow: 0 2px 8px rgba(109,90,209,0.18);
+        overflow: hidden;
+    }}
+    .ai-avatar img {{
+        width: 100%; height: 100%; object-fit: cover;
     }}
 
     .bubble {{
@@ -767,6 +808,49 @@ st.markdown(f"""
     div.stVerticalBlock > div:has(div.stMarkdown) > div.stMarkdown hr {{ margin: 0.5rem 0 !important; }}
 </style>
 """, unsafe_allow_html=True)
+# ─── Initial Splash Screen ──────────────────────────────────────────────────────
+if "app_loaded" not in st.session_state:
+    st.session_state.app_loaded = True
+    if _LOGO_B64:
+        st.markdown(f"""
+        <style>
+        @keyframes splash-fade-out {{
+            0% {{ opacity: 1; visibility: visible; }}
+            80% {{ opacity: 1; visibility: visible; }}
+            100% {{ opacity: 0; visibility: hidden; }}
+        }}
+        @keyframes splash-pulse {{
+            0% {{ transform: scale(0.98); opacity: 0.8; filter: drop-shadow(0 0 20px rgba(124, 114, 187, 0.3)); }}
+            50% {{ transform: scale(1.02); opacity: 1; filter: drop-shadow(0 0 40px rgba(124, 114, 187, 0.6)); }}
+            100% {{ transform: scale(0.98); opacity: 0.8; filter: drop-shadow(0 0 20px rgba(124, 114, 187, 0.3)); }}
+        }}
+        .splash-screen {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            z-index: 9999999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: splash-fade-out 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            pointer-events: none;
+        }}
+        .splash-logo {{
+            max-width: 65vw;
+            max-height: 65vh;
+            object-fit: contain;
+            animation: splash-pulse 1.6s infinite ease-in-out;
+            will-change: transform, opacity, filter;
+        }}
+        </style>
+        <div class="splash-screen">
+            <img class="splash-logo" src="data:image/png;base64,{_LOGO_B64}" alt="PocketBrief Logo" />
+        </div>
+        """, unsafe_allow_html=True)
+
 # ─── Session State ────────────────────────────────────────────────────────────
 if "chat_id" not in st.session_state:
     st.session_state.chat_id = str(uuid.uuid4())
@@ -788,6 +872,8 @@ if "chat_title" not in st.session_state:
     st.session_state.chat_title = ""
 if "editing_chat_id" not in st.session_state:
     st.session_state.editing_chat_id = None
+if "deleting_chat_id" not in st.session_state:
+    st.session_state.deleting_chat_id = None
 if "last_summary" not in st.session_state:
     st.session_state.last_summary = None
 if "pending_upload" not in st.session_state:
@@ -888,15 +974,24 @@ def rename_chat(chat_id, new_title):
             st.session_state.chat_title = new_title
             save_chat()
 
+def delete_chat(chat_id):
+    """Delete a chat by removing its JSON file from the chats directory."""
+    chat_file = CHATS_DIR / f"{chat_id}.json"
+    if chat_file.exists():
+        chat_file.unlink()
+    # If we just deleted the active chat, reset to a fresh session
+    if chat_id == st.session_state.chat_id:
+        clear_to_new_chat()
+
 # ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     # Logo & Theme Toggle
     col_logo, col_theme = st.columns([3, 1])
     with col_logo:
-        st.markdown("""
+        st.markdown(f"""
         <div class="sidebar-top">
             <div class="sidebar-logo">
-                <div class="logo-icon">✦</div>
+                <img class="logo-icon" src="data:image/png;base64,{_LOGO_B64}" alt="PocketBrief" />
                 <div>
                     <div class="logo-text">PocketBrief</div>
                 </div>
@@ -1013,8 +1108,20 @@ with st.sidebar:
                             if st.button("Cancel", key=f"cancel_{f.stem}", use_container_width=True):
                                 st.session_state.editing_chat_id = None
                                 st.rerun()
+                    elif st.session_state.deleting_chat_id == f.stem:
+                        st.markdown(f'<span style="font-size:0.8rem;color:var(--text-secondary);">Delete <b>{html.escape(title[:30])}</b>?</span>', unsafe_allow_html=True)
+                        dc1, dc2 = st.columns(2)
+                        with dc1:
+                            if st.button("Delete", key=f"confirm_del_{f.stem}", use_container_width=True, type="primary"):
+                                delete_chat(f.stem)
+                                st.session_state.deleting_chat_id = None
+                                st.rerun()
+                        with dc2:
+                            if st.button("Cancel", key=f"cancel_del_{f.stem}", use_container_width=True):
+                                st.session_state.deleting_chat_id = None
+                                st.rerun()
                     else:
-                        cols = st.columns([0.88, 0.12])
+                        cols = st.columns([0.78, 0.11, 0.11])
                         with cols[0]:
                             display_title = title[:40] + ("…" if len(title) > 40 else "")
                             if st.button(display_title, key=f"chat_{f.stem}", use_container_width=True):
@@ -1023,6 +1130,10 @@ with st.sidebar:
                         with cols[1]:
                             if st.button("✎", key=f"edit_{f.stem}", help="Rename chat"):
                                 st.session_state.editing_chat_id = f.stem
+                                st.rerun()
+                        with cols[2]:
+                            if st.button("🗑", key=f"del_{f.stem}", help="Delete chat"):
+                                st.session_state.deleting_chat_id = f.stem
                                 st.rerun()
                     rendered_count += 1
                 except Exception:
@@ -1117,9 +1228,9 @@ def do_process_video(youtube_url):
         st.error(f"Unexpected connection error: {e}")
 
 # ─── Page Header (with ⓘ info tooltip for "How it works") ────────────────────
-st.markdown("""
+st.markdown(f"""
 <div class="page-header">
-    <div class="hdr-icon">✦</div>
+    <img class="hdr-icon" src="data:image/png;base64,{_LOGO_B64}" alt="PocketBrief" />
     <div>
         <h1 class="hdr-title">PocketBrief</h1>
         <div class="hdr-sub">
@@ -1176,7 +1287,7 @@ else:
             else:
                 st.markdown(
                     f'''<div class="msg-row ai">
-                        <div class="ai-avatar">✦</div>
+                        <div class="ai-avatar"><img src="data:image/png;base64,{_CHAT_LOGO_B64}" alt="AI Assistant" /></div>
                         <div class="bubble ai">{content}</div>
                     </div>''',
                     unsafe_allow_html=True,
